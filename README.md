@@ -1,7 +1,4 @@
-<!-- This repository is a template -->
-<!-- To use it for your project, search for every comment line and follow instructions -->
-
-# Private Bee Template <!-- Change the title with your project's name -->
+# Private Bee Resources
 
 ## Project Description 
 
@@ -23,7 +20,17 @@ The system computes the **optimal trajectory** not only in **space** but also in
 
 ## Repository Purpose
 
-<!-- Complete with the repository purpose and explain what part of the Private Bee project this repository covers -->
+This repository acts as the Resource & Integration Library for the GPS 4D project. It centralizes all essential assets and external tools that support the ecosystem but are not part of the core flight or navigation codebases. Its goal is to provide a single point of access for research, design, and third-party communication tools.
+
+Within the Private Bee ecosystem, this repository focuses on:
+
+- External Application Logic: Hosting the source code for auxiliary tools, including Discord bots and monitoring dashboards used for team coordination and real-time project alerts.
+
+- Academic & Technical Research: Curating a collection of white papers, state-of-the-art studies on 4D navigation, and comparative analyses of Urban Air Mobility (UAM) solutions.
+
+- 3D Assets & Environment Models: Storing pre-existing or created 3D models.
+
+- Visual assets: Archiving UI/UX design mockups, logos.
 
 ---
 
@@ -37,11 +44,22 @@ privatebee-template/
 │   │   ├── config.yml              -> Issue template configuration
 │   │   └── new-feature.yml         -> Feature request issue template
 │   └── PULL_REQUEST_TEMPLATE.md    -> Pull request template
+├── resources-library/
+│   ├── apps/               -> Discord bots, scripts de monitoring, etc.
+│   ├── docs/               -> Articles de recherche, PDF académiques.
+│   ├── models/             -> Fichiers 3D (STL, OBJ, STEP) pour les drones/villes.
+│   ├── design/             -> Logos, UI/UX mockups, schémas techniques.
+│   └── regulatory/         -> Textes de loi, normes EASA/FAA.
 ├── .gitignore                      -> Git ignore rules
 ├── LICENSE.md                      -> Project license
 └── README.md                       -> Project overview and documentation
 ```
-
+resources-library/
+├── apps/               -> Discord bots, scripts de monitoring, etc.
+├── docs/               -> Articles de recherche, PDF académiques.
+├── models/             -> Fichiers 3D (STL, OBJ, STEP) pour les drones/villes.
+├── design/             -> Logos, UI/UX mockups, schémas techniques.
+└── regulatory/         -> Textes de loi, normes EASA/FAA.
 ---
 
 ## Getting Started
@@ -75,7 +93,7 @@ npm run build
 
 Example:
 ```bash
-git clone https://github.com/PrivateBeeTEST/your-repository.git
+git clone https://github.com/PrivateBee/PrivateBee-Recources.git
 cd your-repository
 npm install
 ```
