@@ -54,12 +54,7 @@ privatebee-template/
 ├── LICENSE.md                      -> Project license
 └── README.md                       -> Project overview and documentation
 ```
-resources-library/
-├── apps/               -> Discord bots, scripts de monitoring, etc.
-├── docs/               -> Articles de recherche, PDF académiques.
-├── models/             -> Fichiers 3D (STL, OBJ, STEP) pour les drones/villes.
-├── design/             -> Logos, UI/UX mockups, schémas techniques.
-└── regulatory/         -> Textes de loi, normes EASA/FAA.
+
 ---
 
 ## Getting Started
