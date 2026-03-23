@@ -40,3 +40,4 @@ def remove_old_members():
 
 if __name__ == "__main__":
     remove_old_members()
+    
