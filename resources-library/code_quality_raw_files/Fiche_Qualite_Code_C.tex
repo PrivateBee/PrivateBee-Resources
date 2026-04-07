@@ -1,0 +1,812 @@
+\documentclass[a4paper,11pt]{report}
+
+% =====================================================
+% Packages
+% =====================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% =====================================================
+% Configuration listings C & Bash
+% =====================================================
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
+\definecolor{darkred}{rgb}{0.6,0.0,0.0}
+
+\lstset{
+  language=C,
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkred},
+  frame=single,
+  breaklines=true,
+  tabsize=2,
+  showstringspaces=false
+}
+
+% =====================================================
+% Titre
+% =====================================================
+\title{\textbf{Qualité de code en C}\\
+Bonnes pratiques, robustesse et compilation stricte}
+\author{Document pédagogique complet}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =====================================================
+\chapter{Introduction}
+
+\section{Objectif du document}
+
+Ce document a pour objectif de présenter les bonnes pratiques essentielles
+en langage C à travers une approche comparative entre \textbf{mauvais} et
+\textbf{bon code}. Il vise à améliorer la qualité, la robustesse et la
+maintenabilité des programmes en mettant en évidence les erreurs courantes
+et leurs corrections.
+
+\section{Criticité}
+
+Le langage C est puissant mais peu permissif : il laisse au développeur la
+responsabilité de la gestion mémoire, des types et du contrôle des erreurs.
+Une mauvaise pratique peut rapidement conduire à :
+\begin{itemize}
+  \item des comportements indéfinis
+  \item des failles de sécurité
+  \item des crashs
+  \item des bugs difficiles à détecter
+\end{itemize}
+
+Adopter des règles strictes permet de prévenir ces risques et de produire
+un code fiable et industriel.
+
+\section{Contenu du document}
+
+Ce document couvre les aspects fondamentaux de la qualité en C :
+\begin{itemize}
+  \item Compilation stricte et gestion des warnings
+  \item Bon usage des types et conversions
+  \item Validation des entrées utilisateur
+  \item Gestion des erreurs et des retours de fonctions
+  \item Manipulation sûre de la mémoire (pointeurs, tableaux, allocation)
+  \item Écriture de code lisible et maintenable (noms, commentaires, structure)
+\end{itemize}
+
+\section{Approche pédagogique}
+
+Chaque chapitre suit une structure simple et efficace :
+\begin{itemize}
+  \item un exemple de \textbf{mauvais code}
+  \item une version corrigée (\textbf{bon code})
+  \item une \textbf{explication} claire du problème et de la solution
+\end{itemize}
+
+Cette approche permet de comprendre rapidement les erreurs fréquentes et
+d'adopter les bons réflexes en situation réelle.
+
+% =====================================================
+\chapter{Compilation stricte (GCC)}
+
+\section{Mauvais code}
+\begin{lstlisting}
+gcc fichier.c
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+gcc -std=c11 -Wall -Wextra -Werror \
+    -Wshadow -Wconversion -Wsign-conversion \
+    -Wstrict-prototypes -Wimplicit-function-declaration \
+    fichier.c -o app
+\end{lstlisting}
+
+\section{Explication}
+Une compilation stricte permet de détecter les erreurs très tôt. Avec \texttt{-Werror}, tous les warnings deviennent bloquants, ce qui garantit un code sans ambiguïté ni comportement indéfini.
+
+L'ajout d'autres paramètres permet d'améliorer la commande gcc afin  d'y ajouter de nouvelles analyses. Cela permet ensuite au développeur de corriger et améliorer son programme plus efficacement.
+
+% =====================================================
+\chapter{Programme principal correct}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int main() {
+    /* ... */
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int main(void) {
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+En C, \texttt{main()} sans \texttt{void} signifie que la liste des arguments n'est pas spécifiée.
+La forme \texttt{int main(void)} est plus claire, plus correcte et cohérente avec une compilation stricte.
+
+% =====================================================
+\chapter{Variables globales inutiles}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int count;
+
+int main(void) {
+    count = 5;
+    printf("%d\n", count);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    int count = 5;
+    printf("%d\n", count);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Les variables globales augmentent le couplage entre fonctions et rendent le code plus difficile à tester et à maintenir.
+Il faut préférer les variables locales tant qu'un partage global n'est pas justifié.
+
+% =====================================================
+\chapter{Variables non initialisées}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    int x;
+    if (x > 0) {
+        printf("ok\n");
+    }
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    int x = 0;
+    if (x > 0) {
+        printf("ok\n");
+    }
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Lire une variable non initialisée provoque un comportement indéfini.
+Le compilateur peut parfois détecter ce cas, mais il faut surtout adopter une discipline systématique d'initialisation.
+
+% =====================================================
+\chapter{Valeurs de retour ignorées}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    char buf[16];
+    fgets(buf, sizeof buf, stdin);
+    puts(buf);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    char buf[16];
+
+    if (fgets(buf, sizeof buf, stdin) == NULL) {
+        return 1;
+    }
+
+    puts(buf);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Ignorer la valeur de retour d'une fonction d'entrée/sortie empêche de détecter un échec.
+Il faut vérifier systématiquement les appels qui peuvent échouer.
+
+% =====================================================
+\chapter{Entrées utilisateur avec scanf}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    int x;
+    scanf("%d", &x);
+    printf("%d\n", x);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <stdio.h>
+
+int main(void) {
+    int x = 0;
+
+    if (scanf("%d", &x) != 1) {
+        return 1;
+    }
+
+    printf("%d\n", x);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+\texttt{scanf} peut échouer si l'entrée ne correspond pas au format attendu.
+Sans test du retour, la variable peut rester indéterminée.
+
+% =====================================================
+\chapter{Conversion robuste avec strtoul}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <stdlib.h>
+
+int main(void) {
+    int x = atoi("12abc");
+    return x;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <errno.h>
+#include <stdlib.h>
+
+int parse_u32(const char *s, unsigned long *out) {
+    char *end = NULL;
+    unsigned long v;
+
+    errno = 0;
+    v = strtoul(s, &end, 10);
+
+    if (errno != 0 || end == s || *end != '\0') {
+        return 1;
+    }
+
+    *out = v;
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+\texttt{atoi} ne permet pas de distinguer une vraie conversion d'une conversion partielle ou invalide.
+\texttt{strtoul} associé à \texttt{errno} et au pointeur de fin permet une validation robuste.
+
+% =====================================================
+\chapter{Overflow signé}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <limits.h>
+
+int add_bad(int a, int b) {
+    return a + b;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <limits.h>
+
+int add_good(int a, int b, int *out) {
+    if (out == NULL) {
+        return 1;
+    }
+
+    if ((b > 0 && a > INT_MAX - b) ||
+        (b < 0 && a < INT_MIN - b)) {
+        return 1;
+    }
+
+    *out = a + b;
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Le dépassement de capacité d'un entier signé provoque un comportement indéfini.
+Il faut vérifier les bornes avant l'opération.
+
+% =====================================================
+\chapter{Conversions signé / non signé}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <string.h>
+
+int main(void) {
+    int i = -1;
+    size_t n = strlen("abc");
+    return (i < n);
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <string.h>
+
+int main(void) {
+    size_t i = 0;
+    size_t n = strlen("abc");
+    return (i < n);
+}
+\end{lstlisting}
+
+\section{Explication}
+Comparer un entier signé négatif avec un type non signé force une conversion implicite piégeuse.
+Il faut choisir des types cohérents avec le domaine de valeurs attendu.
+
+% =====================================================
+\chapter{Masquage de variable}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int main(void) {
+    int x = 10;
+
+    if (x > 0) {
+        int x = 3;
+        (void)x;
+    }
+
+    return x;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int main(void) {
+    int x = 10;
+
+    if (x > 0) {
+        int y = 3;
+        (void)y;
+    }
+
+    return x;
+}
+\end{lstlisting}
+
+\section{Explication}
+Le shadowing rend le code confus et favorise les erreurs de lecture.
+Il vaut mieux éviter de redéclarer une variable avec le même nom dans une portée interne.
+
+% =====================================================
+\chapter{Prototypes de fonctions}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int main(void) {
+    return add(2, 3);
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int add(int a, int b);
+
+int main(void) {
+    return add(2, 3);
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+\end{lstlisting}
+
+\section{Explication}
+Appeler une fonction sans prototype peut conduire à une signature supposée incorrecte.
+En compilation stricte, chaque fonction doit être déclarée avant usage.
+
+% =====================================================
+\chapter{Strict prototypes}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int foo();
+int main() {
+    return foo();
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int foo(void);
+
+int main(void) {
+    return foo();
+}
+\end{lstlisting}
+
+\section{Explication}
+En C, \texttt{int foo();} signifie que les arguments sont inconnus.
+\texttt{int foo(void);} exprime correctement qu'il n'y a aucun argument.
+
+% =====================================================
+\chapter{Affectation au lieu de comparaison}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int main(void) {
+    int x = 0;
+
+    if (x = 1) {
+        return 1;
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int main(void) {
+    int x = 0;
+
+    if (x == 1) {
+        return 1;
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Utiliser \texttt{=} dans une condition modifie la variable au lieu de la comparer.
+C'est une erreur classique que les warnings de compilation permettent souvent de repérer.
+
+% =====================================================
+\chapter{Switch incomplet}
+
+\section{Mauvais code}
+\begin{lstlisting}
+void foo(void);
+
+void f(int s) {
+    switch (s) {
+        case 1:
+            foo();
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+void foo(void);
+
+void f(int s) {
+    switch (s) {
+        case 1:
+            foo();
+            break;
+        default:
+            break;
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Sans \texttt{break}, un cas peut tomber dans le suivant.
+Sans \texttt{default}, un état non prévu n'est pas explicitement géré.
+
+% =====================================================
+\chapter{Accès hors bornes dans les tableaux}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int get_bad(const int *a, unsigned len, unsigned idx) {
+    return a[idx];
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int get_good(const int *a, unsigned len, unsigned idx, int *out) {
+    if (a == NULL || out == NULL) {
+        return 1;
+    }
+
+    if (idx >= len) {
+        return 1;
+    }
+
+    *out = a[idx];
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Un accès hors bornes provoque un comportement indéfini.
+Il faut vérifier les bornes avant tout accès mémoire indexé.
+
+% =====================================================
+\chapter{Pointeurs nuls}
+
+\section{Mauvais code}
+\begin{lstlisting}
+void set_bad(int *p) {
+    *p = 42;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int set_good(int *p) {
+    if (p == NULL) {
+        return 1;
+    }
+
+    *p = 42;
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Déréférencer un pointeur nul provoque généralement un crash.
+Toute fonction manipulant un pointeur reçu de l'extérieur doit valider ce pointeur.
+
+% =====================================================
+\chapter{Allocation dynamique}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <stdlib.h>
+
+int main(void) {
+    int *p = malloc(10 * sizeof(int));
+    p[0] = 1;
+    free(p);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <stdlib.h>
+
+int main(void) {
+    int *p = malloc(10 * sizeof(*p));
+
+    if (p == NULL) {
+        return 1;
+    }
+
+    p[0] = 1;
+    free(p);
+    p = NULL;
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+\texttt{malloc} peut échouer et retourner \texttt{NULL}.
+Après un \texttt{free}, remettre le pointeur à \texttt{NULL} réduit le risque d'usage accidentel ultérieur.
+
+% =====================================================
+\chapter{Erreur classique avec sizeof(pointer)}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <string.h>
+
+int main(void) {
+    const char *s = "hello";
+    char buf[16];
+
+    memcpy(buf, s, sizeof(s));
+    return 0;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <string.h>
+
+int main(void) {
+    const char *s = "hello";
+    char buf[16];
+
+    memcpy(buf, s, strlen(s) + 1);
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+Quand \texttt{s} est un pointeur, \texttt{sizeof(s)} donne la taille du pointeur, pas celle de la chaîne pointée.
+Il faut raisonner sur la donnée réelle, pas sur l'adresse.
+
+% =====================================================
+\chapter{Macros non sûres}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#define INC(x) x++
+#define SWAP(a,b) { int t=a; a=b; b=t; }
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#define INC(x) do { (x)++; } while (0)
+#define SWAP(a,b) do { int t = (a); (a) = (b); (b) = t; } while (0)
+\end{lstlisting}
+
+\section{Explication}
+Une macro sans parenthèses ni structure sûre peut casser la logique du code appelant.
+Le motif \texttt{do \{ \} while (0)} est la forme classique pour une macro multi-instruction.
+
+% =====================================================
+\chapter{Usage inutile de goto}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int f(int ok) {
+    if (!ok) {
+        goto err;
+    }
+
+    return 0;
+
+err:
+    return 1;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int f(int ok) {
+    if (!ok) {
+        return 1;
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+\section{Explication}
+\texttt{goto} rend le flux d'exécution plus difficile à suivre.
+Il peut avoir des usages légitimes dans certains schémas de nettoyage, mais il faut l'éviter quand une structure plus simple suffit.
+
+% =====================================================
+\chapter{Commentaires utiles}
+
+\section{Mauvais code}
+\begin{lstlisting}
+i++; /* incremente i */
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+/* On limite les tentatives pour eviter une boucle infinie. */
+retry_count++;
+\end{lstlisting}
+
+\section{Explication}
+Un bon commentaire explique l'intention ou la contrainte, pas une évidence syntaxique.
+Le lecteur doit comprendre pourquoi le code existe.
+
+% =====================================================
+\chapter{Paramètre inutilisé}
+
+\section{Mauvais code}
+\begin{lstlisting}
+void cb(int x) {
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+void cb(int x) {
+    (void)x;
+}
+\end{lstlisting}
+
+\section{Explication}
+Un paramètre non utilisé déclenche souvent un warning.
+Le cast en \texttt{(void)} documente explicitement que ce paramètre est volontairement ignoré.
+
+% =====================================================
+\chapter{Nommage cohérent}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#define max_retry 3
+struct Person { int Age; };
+int DoStuff();
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#define MAX_RETRY 3
+
+typedef struct {
+    int age;
+} person_t;
+
+int do_stuff(void);
+\end{lstlisting}
+
+\section{Explication}
+Un nommage cohérent améliore fortement la lisibilité.
+Une convention simple peut être :
+\begin{itemize}
+    \item macros en majuscules ;
+    \item types structurés avec suffixe \texttt{\_t} si le projet l'autorise ;
+    \item fonctions et variables en minuscules avec underscore.
+\end{itemize}
+
+% =====================================================
+\chapter{Style de code cohérent}
+
+\section{Mauvais code}
+\begin{lstlisting}
+if(x>0){foo();}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+if (x > 0) {
+    foo();
+}
+\end{lstlisting}
+
+\section{Explication}
+Un style homogène rend le code plus facile à lire, relire et maintenir.
+Peu importe la convention choisie, l'essentiel est d'être cohérent dans tout le projet.
+
+% =====================================================
+\chapter{Conclusion}
+
+Un code C de qualité professionnelle repose sur :
+\begin{itemize}
+    \item une compilation stricte sans warning ;
+    \item une gestion rigoureuse des types, des conversions et des prototypes ;
+    \item des vérifications systématiques des retours, pointeurs et bornes ;
+    \item un style cohérent et un nommage lisible ;
+    \item une attention particulière à la robustesse mémoire et à la sécurité.
+\end{itemize}
+
+Ces pratiques permettent de produire un code plus fiable, plus maintenable et plus sûr dans la durée.
+
+\end{document}

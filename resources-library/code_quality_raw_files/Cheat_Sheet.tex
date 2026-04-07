@@ -1,0 +1,248 @@
+\documentclass[11pt, a4paper]{report}
+
+% --- PACKAGES ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{listingsutf8}
+\usepackage[most]{tcolorbox}
+\usepackage{tabularx}
+\usepackage{booktabs}
+
+% --- COULEURS ---
+\definecolor{primary}{rgb}{0.1, 0.3, 0.5}
+\definecolor{bgcode}{rgb}{0.96, 0.96, 0.96}
+\definecolor{keyword}{rgb}{0.1, 0.1, 0.7}
+\definecolor{comment}{rgb}{0.1, 0.5, 0.1}
+
+% --- LISTINGS ---
+\lstset{
+    backgroundcolor=\color{bgcode},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keyword}\bfseries,
+    commentstyle=\color{comment}\itshape,
+    frame=single,
+    rulecolor=\color{lightgray},
+    breaklines=true,
+    showstringspaces=false,
+    inputencoding=utf8,
+    extendedchars=true
+}
+
+\newtcolorbox{notebox}[1][]{
+    colback=blue!5,
+    colframe=blue!50!black,
+    fonttitle=\bfseries,
+    title=#1,
+    arc=3mm
+}
+
+\title{\textbf{Cheat Sheet DevSecOps}\\Architecture, Nommage et Commandes (C/C++, Python, Java)}
+\author{Référentiel CI/CD \& Qualité de Code}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =========================================================================
+\chapter{Architecture et Structure des Projets}
+% =========================================================================
+L'organisation des fichiers doit respecter le principe du \textbf{Mirroring} (effet miroir). Le dossier des tests doit reproduire exactement l'arborescence du code source.
+
+\section{Structure Standard C, C++ et Python}
+
+\begin{lstlisting}[language=bash, numbers=none]
+mon-projet/
+|-- src/                # Code source de production
+|   |-- api/
+|   |   \-- auth.py     # ou auth.c / auth.cpp
+|   \-- utils/
+|       \-- math.py
+\-- tests/              # Dossier dedie aux tests (DETECTE PAR LA CI)
+    |-- api/
+    |   \-- test_auth.py
+    \-- utils/
+        \-- test_math.py
+\end{lstlisting}
+
+\section{Structure Standard Java (Maven / Gradle)}
+Java impose une arborescence très stricte basée sur les conventions Maven.
+
+\begin{lstlisting}[language=bash, numbers=none]
+mon-projet-java/
+|-- src/
+|   |-- main/
+|   |   \-- java/
+|   |       \-- com/monentreprise/UserService.java
+|   \-- test/           # Dossier dedie aux tests Java
+|       \-- java/
+|           \-- com/monentreprise/UserServiceTest.java
+\-- pom.xml             # Fichier de configuration Maven
+\end{lstlisting}
+
+% =========================================================================
+\chapter{Règles de Nommage (Production et Tests)}
+% =========================================================================
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\textbf{Langage} & \textbf{Code Source (Variables, Classes)} & \textbf{Fichiers de Tests (Imposé par la CI)} \\
+\hline
+\textbf{C / C++} & 
+\texttt{snake\_case} pour variables/fonctions. \texttt{MAJUSCULES} pour macros et enums. & 
+\texttt{test\_*.c} ou \texttt{*\_test.cpp} \newline \textit{Ex: test\_calcul.c} \\
+\hline
+\textbf{Python} & 
+\texttt{snake\_case} pour variables/fonctions. \texttt{PascalCase} pour les classes. & 
+\texttt{test\_*.py} ou \texttt{*\_test.py} \newline \textit{Ex: test\_auth.py} \\
+\hline
+\textbf{Java} & 
+\texttt{camelCase} pour variables/méthodes. \texttt{PascalCase} pour les classes. & 
+\texttt{*Test.java}, \texttt{Test*.java}, \texttt{*TestCase.java} \newline \textit{Ex: UserServiceTest.java} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\newpage
+
+% =========================================================================
+\chapter{Dictionnaire des Commandes}
+% =========================================================================
+
+% =========================================================================
+\section{Dictionnaire des Commandes : C et C++}
+% =========================================================================
+
+\subsection{Compilation et Vérification (GCC / Clang)}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{gcc} / \texttt{clang} : Compilateurs C.
+    \item \texttt{g++} / \texttt{clang++} : Compilateurs C++.
+    \item \textbf{Options clés :}
+    \begin{itemize}
+        \item \texttt{-std=c11} ou \texttt{-std=c++17} : Force la norme du langage.
+        \item \texttt{-Wall -Wextra} : Active tous les avertissements (warnings) majeurs.
+        \item \texttt{-Werror} : Transforme tous les warnings en erreurs (bloque la compilation).
+        \item \texttt{-Wshadow} : Alerte si une variable locale masque une variable globale.
+        \item \texttt{-O2} : Niveau d'optimisation standard pour la production.
+        \item \texttt{-g} : Inclut les symboles de débogage (utile pour Valgrind ou GDB).
+        \item \texttt{-fsanitize=address} : Active ASan (détecte les dépassements de mémoire au runtime).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Formatage Automatique : \texttt{clang-format}}
+Assure un style de code homogène sans débat humain.
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{-i} : Modifie les fichiers directement (in-place). Sans cette option, il affiche juste le résultat dans le terminal.
+    \item \texttt{--style=LLVM} (ou GNU, Google) : Applique les règles de formatage spécifiques d'une norme.
+\end{itemize}
+
+\subsection{Analyse Statique (SAST \& Qualité) : \texttt{cppcheck} \& \texttt{flawfinder}}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{cppcheck} : Linter C/C++.
+    \begin{itemize}
+        \item \texttt{--enable=all} : Active toutes les vérifications (style, perfs, portabilité).
+        \item \texttt{--inconclusive} : Autorise l'outil à remonter des erreurs probables, même s'il n'est pas sûr à 100\%.
+        \item \texttt{--xml} : Exporte le résultat au format XML (nécessaire pour SonarQube).
+        \item \texttt{--suppress=missingIncludeSystem} : Ignore les erreurs liées aux entêtes système (ex: \texttt{<stdio.h>}).
+    \end{itemize}
+    \item \texttt{flawfinder} : Scanneur de vulnérabilités de sécurité (C/C++).
+    \begin{itemize}
+        \item \texttt{--singleline} : Affiche les vulnérabilités sur une seule ligne (plus facile à lire dans les logs CI).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Couverture de Code : \texttt{gcovr}}
+Extrait les données de couverture générées lors de l'exécution des tests.
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{--xml-pretty} : Génère un fichier XML lisible (format Cobertura pour SonarQube).
+    \item \texttt{--print-summary} : Affiche un résumé rapide dans le terminal de la CI.
+    \item \texttt{-o coverage.xml} : Définit le nom du fichier de sortie.
+\end{itemize}
+
+\newpage
+
+% =========================================================================
+\section{Dictionnaire des Commandes : Python}
+% =========================================================================
+
+\subsection{Formatage et Linting : \texttt{ruff} (Remplace Pylint/Black)}
+Ruff est un linter et formateur ultra-rapide écrit en Rust, utilisé dans notre pipeline moderne.
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{python -m ruff format .} : Formate automatiquement le code.
+    \item \texttt{python -m ruff format --check .} : Vérifie si le code est bien formaté (Renvoie une erreur "exit 1" si ce n'est pas le cas, utile en CI).
+    \item \texttt{python -m ruff check .} : Lance l'analyse statique (détecte les variables inutilisées, les imports morts, etc.).
+\end{itemize}
+
+\subsection{Typage Statique : \texttt{mypy}}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{python -m mypy .} : Vérifie les Type Hints (\texttt{x: int}, \texttt{-> str}).
+    \item \texttt{--strict} : Option facultative mais recommandée. Force le typage de \textbf{toutes} les fonctions sans exception.
+\end{itemize}
+
+\subsection{Sécurité SAST : \texttt{bandit}}
+Analyse le code source Python pour trouver des failles de sécurité.
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{-r .} : Scanne le dossier courant récursivement.
+    \item \texttt{-f xml -o bandit-report.xml} : Spécifie le format de sortie (\texttt{xml}) et le fichier cible pour SonarQube.
+\end{itemize}
+
+\subsection{Tests et Couverture : \texttt{pytest} \& \texttt{coverage}}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{python -m coverage run -m pytest} : Lance les tests \texttt{pytest} tout en enregistrant quelles lignes de code ont été exécutées.
+    \item \texttt{-q} (pour pytest) : Mode "quiet" (silencieux), réduit la verbosité dans la CI.
+    \item \texttt{--junitxml=pytest-report.xml} : Exporte le résultat (succès/échecs des tests) en format standardisé XML.
+    \item \texttt{python -m coverage xml} : Transforme les données de couverture enregistrées en un fichier \texttt{coverage.xml} lisible par SonarQube.
+\end{itemize}
+
+\newpage
+
+% =========================================================================
+\section{Dictionnaire des Commandes : Java}
+% =========================================================================
+
+\subsection{Compilation et Tests : Maven (\texttt{mvn})}
+Maven est l'outil de gestion de build standard.
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{mvn clean} : Supprime le dossier \texttt{target/} (les anciens builds) pour repartir de zéro.
+    \item \texttt{mvn test} : Compile le projet et lance les tests unitaires via le plugin Surefire (qui cherche les fichiers \texttt{*Test.java}).
+    \item \texttt{-fn} (Fail Never) : Option cruciale en CI non-bloquante. Même si un test échoue, Maven ne retourne pas d'erreur fatale, permettant au pipeline de continuer et d'envoyer le rapport à SonarQube.
+\end{itemize}
+
+\subsection{Couverture de Code : JaCoCo}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{mvn jacoco:report} : Génère le rapport de couverture XML dans le dossier \texttt{target/site/jacoco/jacoco.xml}. Doit être lancé \textbf{après} l'exécution des tests.
+\end{itemize}
+
+\subsection{Analyse SonarQube et SAST}
+En Java, SonarQube fait souvent l'analyse statique lui-même, mais il peut être complété.
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{mvn sonar:sonar} : Envoie le code, les rapports de test (Surefire) et les rapports de couverture (JaCoCo) vers le serveur SonarQube.
+    \item \texttt{-Dsonar.projectKey=...} : Définit l'identifiant unique du projet sur le serveur Sonar.
+    \item \texttt{-Dsonar.host.url=...} : URL du serveur SonarQube (ex: http://localhost:9000).
+    \item \texttt{-Dsonar.token=...} : Jeton d'authentification pour se connecter au serveur.
+\end{itemize}
+
+\newpage
+
+% =========================================================================
+\section{Résumé du Pipeline CI/CD DevSecOps}
+% =========================================================================
+La logique appliquée à tous ces outils dans notre GitHub Actions repose sur deux règles de base :
+\begin{enumerate}
+    \item \textbf{Vérification bloquante du Format et du Style} : Si le code est mal nommé (ex: \texttt{test\_*.py}), mal indenté (\texttt{clang-format}, \texttt{Ruff}), la CI s'arrête en erreur (\texttt{exit 1}). Le développeur doit corriger localement et pousser de nouveau.
+    \item \textbf{Vérification non-bloquante des Tests (Best Effort)} : Si aucun test n'est trouvé, la CI crée un rapport vide factice (\texttt{touch coverage.xml}) pour ne pas faire planter SonarQube. L'objectif est de mesurer la qualité continue, pas de bloquer le projet s'il n'y a pas encore de tests.
+\end{enumerate}
+
+\end{document}

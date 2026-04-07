@@ -1,0 +1,1039 @@
+\documentclass[a4paper,11pt]{report}
+
+% =====================================================
+% Packages
+% =====================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% =====================================================
+% Configuration listings C++ & Bash
+% =====================================================
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
+\definecolor{darkred}{rgb}{0.6,0.0,0.0}
+
+\lstset{
+  language=C++,
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkred},
+  frame=single,
+  breaklines=true,
+  tabsize=2,
+  showstringspaces=false
+}
+
+% =====================================================
+% Titre
+% =====================================================
+\title{\textbf{Qualité de code en C++}\\
+Bonnes pratiques, robustesse et contexte embarqué}
+\author{Document pédagogique complet}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =====================================================
+\chapter{Introduction}
+
+\section{Objectif du document}
+
+Ce document a pour objectif de présenter les bonnes pratiques essentielles en langage C++ à travers une approche comparative entre \textbf{mauvais} et \textbf{bon code}. Il vise à améliorer la qualité, la robustesse et la maintenabilité des programmes en mettant en évidence les erreurs courantes et leurs corrections.
+
+\section{Criticité}
+
+Le langage C++ est puissant, expressif et performant, mais il reste exigeant.
+Une mauvaise pratique peut rapidement conduire à :
+\begin{itemize}
+  \item des comportements indéfinis
+  \item des erreurs mémoire
+  \item des bugs liés aux conversions, aux durées de vie ou au polymorphisme
+  \item des défauts difficiles à détecter et à corriger
+\end{itemize}
+
+Adopter des règles strictes permet de mieux maîtriser la complexité du langage et de produire un code fiable, lisible et adapté à un usage industriel ou embarqué.
+
+\section{Contenu du document}
+
+Ce document couvre les aspects fondamentaux de la qualité en C++ :
+\begin{itemize}
+  \item Compilation stricte et gestion des warnings
+  \item Bon usage des types, conversions et casts
+  \item Gestion sûre des objets, pointeurs, références et durées de vie
+  \item Prévention des comportements indéfinis et des erreurs mémoire
+  \item Écriture de code lisible, structuré et maintenable
+  \item Maîtrise des bonnes pratiques liées à la robustesse, à la concurrence et au contexte embarqué
+\end{itemize}
+
+\section{Approche pédagogique}
+
+Chaque chapitre suit une structure simple et efficace :
+\begin{itemize}
+  \item un exemple de \textbf{mauvais code}
+  \item une version corrigée (\textbf{bon code})
+  \item une \textbf{explication} claire du problème et de la solution
+\end{itemize}
+
+Cette approche permet de comprendre rapidement les erreurs fréquentes et d'adopter les bons réflexes en situation réelle.
+
+% =====================================================
+\chapter{Compilation stricte}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstdio>
+
+void log_u32(unsigned v) {
+    std::printf("%d\n", v);
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <cstdio>
+
+void log_u32(unsigned v) {
+    std::printf("%u\n", v);
+}
+\end{lstlisting}
+
+\section{Explication}
+La compilation stricte détecte très tôt les erreurs de format, les conversions implicites dangereuses, les oublis de \texttt{break}, les masquages de variables ou encore les destructeurs non virtuels.
+Une base de compilation recommandée est :
+
+\begin{lstlisting}[language=bash]
+g++ -std=c++20 -O2 -g -Wall -Wextra -Wpedantic -Werror \
+    -Wshadow -Wconversion -Wsign-conversion \
+    -Wnull-dereference -Wdouble-promotion -Wformat=2 \
+    -Wimplicit-fallthrough -Wold-style-cast -Wnon-virtual-dtor \
+    fichier.cpp -o app
+\end{lstlisting}
+
+L'objectif est d'obtenir zéro warning.
+
+% =====================================================
+\chapter{Allocation dynamique interdite en contexte embarqué}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int* p = new int(42);
+delete p;
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <array>
+#include <cstdint>
+
+static std::array<int, 4> buffer{};
+static std::uint32_t value = 42;
+\end{lstlisting}
+
+\section{Explication}
+En embarqué critique, on évite souvent le heap à cause de la fragmentation, du manque de déterminisme et des échecs d'allocation au runtime.
+On préfère des structures statiques ou de taille fixe.
+
+% =====================================================
+\chapter{Exceptions souvent interdites}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int f() {
+    throw 42;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+enum class Status {
+    Ok,
+    Error
+};
+
+Status do_work() noexcept {
+    return Status::Ok;
+}
+\end{lstlisting}
+
+\section{Explication}
+Dans beaucoup de projets embarqués, les exceptions sont désactivées pour réduire la taille binaire et garantir un comportement plus déterministe.
+On utilise alors des codes retour explicites et \texttt{noexcept}.
+
+% =====================================================
+\chapter{Dépassement de tableau}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int main() {
+    int a[3] = {1, 2, 3};
+    a[3] = 99;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <array>
+
+int main() {
+    std::array<int, 3> a{1, 2, 3};
+    a.at(2) = 99;
+}
+\end{lstlisting}
+
+\section{Explication}
+Accéder hors des bornes d'un tableau provoque un comportement indéfini.
+Les conteneurs standards comme \texttt{std::array} permettent des accès plus sûrs, notamment avec \texttt{at()}.
+
+% =====================================================
+\chapter{Variables non initialisées}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstdio>
+
+int main() {
+    int x;
+    std::printf("%d\n", x);
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <cstdio>
+
+int main() {
+    int x = 0;
+    std::printf("%d\n", x);
+}
+\end{lstlisting}
+
+\section{Explication}
+Lire une variable non initialisée donne une valeur indéterminée.
+C'est une source fréquente de bugs aléatoires.
+
+% =====================================================
+\chapter{Déréférencement de pointeur nul}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int read(const int* p) {
+    return *p;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <optional>
+
+[[nodiscard]] std::optional<int> read(const int* p) {
+    if (!p) {
+        return std::nullopt;
+    }
+    return *p;
+}
+\end{lstlisting}
+
+\section{Explication}
+Déréférencer \texttt{nullptr} provoque un comportement indéfini, souvent un crash.
+Il faut vérifier les pointeurs reçus avant usage.
+
+% =====================================================
+\chapter{Référence pendante}
+
+\section{Mauvais code}
+\begin{lstlisting}
+const int& bad_ref() {
+    int x = 42;
+    return x;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int good_value() {
+    int x = 42;
+    return x;
+}
+\end{lstlisting}
+
+\section{Explication}
+Retourner une référence sur une variable locale est invalide dès la sortie de la fonction.
+Il faut retourner une valeur ou utiliser une durée de vie adaptée.
+
+% =====================================================
+\chapter{Use-after-scope}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int* g_ptr = nullptr;
+
+void f() {
+    int x = 10;
+    g_ptr = &x;
+}
+
+int main() {
+    f();
+    return *g_ptr;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+void set_value(int& out) {
+    out = 10;
+}
+
+int main() {
+    int x = 0;
+    set_value(x);
+    return x;
+}
+\end{lstlisting}
+
+\section{Explication}
+Conserver l'adresse d'une variable locale au-delà de sa portée mène à un comportement indéfini.
+Il faut laisser l'appelant gérer la durée de vie des objets qu'il fournit.
+
+% =====================================================
+\chapter{Overflow signé}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <climits>
+
+int main() {
+    int x = INT_MAX;
+    x += 1;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <limits>
+#include <optional>
+
+[[nodiscard]] std::optional<int> add_safe(int a, int b) {
+    if (b > 0 && a > std::numeric_limits<int>::max() - b) {
+        return std::nullopt;
+    }
+    if (b < 0 && a < std::numeric_limits<int>::min() - b) {
+        return std::nullopt;
+    }
+    return a + b;
+}
+\end{lstlisting}
+
+\section{Explication}
+Le dépassement de capacité d'un entier signé est un comportement indéfini en C++.
+Il faut contrôler les bornes avant l'opération.
+
+% =====================================================
+\chapter{Division par zéro}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int main() {
+    int a = 10;
+    int b = 0;
+    return a / b;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <optional>
+
+[[nodiscard]] std::optional<int> div_checked(int a, int b) {
+    if (b == 0) {
+        return std::nullopt;
+    }
+    return a / b;
+}
+\end{lstlisting}
+
+\section{Explication}
+Diviser un entier par zéro est un comportement indéfini.
+Le contrôle préalable est obligatoire.
+
+% =====================================================
+\chapter{Conversions signé / non signé}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstddef>
+
+int main() {
+    int i = -1;
+    std::size_t n = static_cast<std::size_t>(i);
+    (void)n;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <optional>
+#include <cstddef>
+
+[[nodiscard]] std::optional<std::size_t> to_size(int i) {
+    if (i < 0) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(i);
+}
+\end{lstlisting}
+
+\section{Explication}
+Un entier négatif converti en type non signé devient une très grande valeur.
+Il faut vérifier le domaine de validité avant conversion.
+
+% =====================================================
+\chapter{Narrowing et troncature}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstdint>
+
+std::uint8_t v = 300;
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <optional>
+#include <cstdint>
+
+[[nodiscard]] std::optional<std::uint8_t> to_u8(int value) {
+    if (value < 0 || value > 255) {
+        return std::nullopt;
+    }
+    return static_cast<std::uint8_t>(value);
+}
+\end{lstlisting}
+
+\section{Explication}
+Affecter une valeur trop grande dans un type plus petit tronque l'information.
+Cette troncature doit être évitée ou validée explicitement.
+
+% =====================================================
+\chapter{Double promotion}
+
+\section{Mauvais code}
+\begin{lstlisting}
+float x = 1.0f;
+float y = x + 0.1;
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+float x = 1.0f;
+float y = x + 0.1f;
+\end{lstlisting}
+
+\section{Explication}
+Un littéral décimal comme \texttt{0.1} est un \texttt{double} par défaut.
+Cela force une promotion implicite qui peut dégrader les performances ou provoquer des warnings.
+
+% =====================================================
+\chapter{Cast C-style dangereux}
+
+\section{Mauvais code}
+\begin{lstlisting}
+double d = 3.14;
+int x = (int&)d;
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+double d = 3.14;
+int x = static_cast<int>(d);
+\end{lstlisting}
+
+\section{Explication}
+Les casts C-style masquent plusieurs types de conversion possibles.
+Les casts C++ rendent l'intention explicite et permettent une lecture plus sûre.
+
+% =====================================================
+\chapter{Affectation au lieu de comparaison}
+
+\section{Mauvais code}
+\begin{lstlisting}
+bool ok = false;
+
+if (ok = true) {
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+bool ok = false;
+
+if (ok) {
+}
+\end{lstlisting}
+
+\section{Explication}
+Utiliser \texttt{=} dans une condition modifie la variable.
+Cette erreur classique peut être détectée avec les warnings de compilation.
+
+% =====================================================
+\chapter{Switch avec fallthrough involontaire}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int f(int x) {
+    switch (x) {
+        case 0:
+            doA();
+        case 1:
+            doB();
+            break;
+        default:
+            return 0;
+    }
+    return 1;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int f(int x) {
+    switch (x) {
+        case 0:
+            doA();
+            break;
+        case 1:
+            doB();
+            break;
+        default:
+            return 0;
+    }
+    return 1;
+}
+\end{lstlisting}
+
+\section{Explication}
+Sans \texttt{break}, l'exécution continue dans le cas suivant.
+Cela peut être voulu, mais dans ce cas il faut le documenter explicitement.
+
+% =====================================================
+\chapter{Switch non exhaustif sur enum}
+
+\section{Mauvais code}
+\begin{lstlisting}
+enum class State {
+    Idle,
+    Run,
+    Error
+};
+
+void handle(State s) {
+    switch (s) {
+        case State::Idle:
+            break;
+        case State::Run:
+            break;
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+enum class State {
+    Idle,
+    Run,
+    Error
+};
+
+void handle(State s) {
+    switch (s) {
+        case State::Idle:
+            break;
+        case State::Run:
+            break;
+        case State::Error:
+            break;
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Oublier un état dans un \texttt{switch} sur une énumération crée un bug silencieux.
+Chaque valeur doit être traitée explicitement ou via un \texttt{default} justifié.
+
+% =====================================================
+\chapter{Accolades manquantes}
+
+\section{Mauvais code}
+\begin{lstlisting}
+if (ok)
+    doA();
+    doB();
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+if (ok) {
+    doA();
+    doB();
+}
+\end{lstlisting}
+
+\section{Explication}
+Sans accolades, l'indentation peut devenir trompeuse.
+Il faut préférer des blocs explicites, même pour un seul statement.
+
+% =====================================================
+\chapter{Comparaison flottante directe}
+
+\section{Mauvais code}
+\begin{lstlisting}
+float a = 0.1f + 0.2f;
+
+if (a == 0.3f) {
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <cmath>
+
+bool nearly_equal(float a, float b, float eps) {
+    return std::fabs(a - b) <= eps;
+}
+\end{lstlisting}
+
+\section{Explication}
+Les flottants sont approximatifs.
+Une comparaison directe avec \texttt{==} est donc fragile dans la plupart des cas.
+
+% =====================================================
+\chapter{Commentaires trompeurs}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <array>
+#include <cstdint>
+
+// Allocate 128 bytes of RAM
+std::array<std::uint8_t, 14> txBuffer;
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <array>
+#include <cstdint>
+
+// txBuffer contient le message a emettre (14 octets fixes).
+std::array<std::uint8_t, 14> txBuffer{};
+\end{lstlisting}
+
+\section{Explication}
+Un commentaire faux ou imprécis nuit à la compréhension.
+Un bon commentaire explique la contrainte, l'intention ou la raison métier.
+
+% =====================================================
+\chapter{Convention de nommage}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int MaxValue = 100;
+int max_value = 200;
+int MAXVALUE = 300;
+
+void DoStuff();
+void do_stuff();
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+constexpr int kMaxValue = 100;
+int current_value = 0;
+
+struct PacketHeader {
+    int id;
+};
+
+void process_packet(const PacketHeader& h);
+\end{lstlisting}
+
+\section{Explication}
+Une convention cohérente améliore fortement la lisibilité.
+Il faut définir une règle simple et la respecter dans tout le projet.
+
+% =====================================================
+\chapter{Fonctions trop longues}
+
+\section{Mauvais code}
+\begin{lstlisting}
+void handle_request(Request r) {
+    /* parse + validate + auth + log + business + format */
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+Response handle_request(const Request& r) {
+    const auto parsed = parse(r);
+
+    if (!validate(parsed)) {
+        return error("bad request");
+    }
+
+    const auto user = authenticate(parsed);
+    return execute_business(user, parsed);
+}
+\end{lstlisting}
+
+\section{Explication}
+Une fonction qui fait trop de choses devient difficile à tester, relire et maintenir.
+Il faut découper les responsabilités.
+
+% =====================================================
+\chapter{Nombres magiques}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int timeout_ms = 1500;
+int retries = 4;
+
+if (retries > 3) {
+    abort();
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+constexpr int kTimeoutMs = 1500;
+constexpr int kMaxRetries = 3;
+
+int retries = 4;
+int timeout_ms = kTimeoutMs;
+
+if (retries > kMaxRetries) {
+    abort();
+}
+\end{lstlisting}
+
+\section{Explication}
+Les valeurs magiques rendent le code opaque.
+Les constantes nommées rendent l'intention explicite.
+
+% =====================================================
+\chapter{Valeur de retour ignorée}
+
+\section{Mauvais code}
+\begin{lstlisting}
+struct Frame {
+    int id;
+};
+
+bool send_frame(const Frame& f);
+
+void task(const Frame& f) {
+    send_frame(f);
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+struct Frame {
+    int id;
+};
+
+[[nodiscard]] bool send_frame(const Frame& f);
+
+void task(const Frame& f) {
+    if (!send_frame(f)) {
+        /* gerer l'erreur */
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Ignorer une valeur de retour masque une erreur potentielle.
+\texttt{[[nodiscard]]} aide à imposer cette discipline.
+
+% =====================================================
+\chapter{Const-correctness}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <array>
+
+int sum(std::array<int,3>& a) {
+    return a[0] + a[1] + a[2];
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <array>
+
+int sum(const std::array<int,3>& a) {
+    return a[0] + a[1] + a[2];
+}
+\end{lstlisting}
+
+\section{Explication}
+Une API qui n'a pas besoin de modifier son argument doit l'exprimer avec \texttt{const}.
+Cela clarifie le contrat et élargit les cas d'usage.
+
+% =====================================================
+\chapter{Concurrence : data race}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <thread>
+
+int x = 0;
+
+void f() {
+    for (int i = 0; i < 100000; i++) {
+        x++;
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <thread>
+#include <atomic>
+
+std::atomic<int> x{0};
+
+void f() {
+    for (int i = 0; i < 100000; i++) {
+        x.fetch_add(1);
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Deux threads qui modifient la même variable sans synchronisation créent une course de données.
+Le résultat devient non déterministe.
+
+% =====================================================
+\chapter{Destructeur non virtuel}
+
+\section{Mauvais code}
+\begin{lstlisting}
+struct Base {
+    ~Base() = default;
+};
+
+struct Der : Base {
+    ~Der() = default;
+};
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+struct Base {
+    virtual ~Base() = default;
+};
+
+struct Der : Base {
+    ~Der() override = default;
+};
+\end{lstlisting}
+
+\section{Explication}
+Si une classe est utilisée polymorphiquement, son destructeur doit être virtuel.
+Sinon la destruction via pointeur de base est dangereuse.
+
+% =====================================================
+\chapter{Object slicing}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstdio>
+
+struct Base {
+    virtual ~Base() = default;
+    virtual void f() { std::printf("B\n"); }
+};
+
+struct Der : Base {
+    void f() override { std::printf("D\n"); }
+    int x = 1;
+};
+
+int main() {
+    Der d;
+    Base b = d;
+    b.f();
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <cstdio>
+
+struct Base {
+    virtual ~Base() = default;
+    virtual void f() { std::printf("B\n"); }
+};
+
+struct Der : Base {
+    void f() override { std::printf("D\n"); }
+    int x = 1;
+};
+
+int main() {
+    Der d;
+    Base& b = d;
+    b.f();
+}
+\end{lstlisting}
+
+\section{Explication}
+Copier un objet dérivé dans un objet base par valeur supprime la partie dérivée.
+Il faut passer par référence ou pointeur quand on veut conserver le polymorphisme.
+
+% =====================================================
+\chapter{Buffer overflow via sprintf}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstdio>
+
+int main() {
+    char buf[8];
+    std::sprintf(buf, "value=%d", 123456);
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <cstdio>
+#include <cstddef>
+
+bool make(char* out, std::size_t cap, int v) {
+    int n = std::snprintf(out, cap, "value=%d", v);
+    return n >= 0 && static_cast<std::size_t>(n) < cap;
+}
+\end{lstlisting}
+
+\section{Explication}
+\texttt{sprintf} n'impose aucune limite de taille.
+\texttt{snprintf} permet d'éviter les dépassements de tampon.
+
+% =====================================================
+\chapter{Variables d'interruption et volatile}
+
+\section{Mauvais code}
+\begin{lstlisting}
+bool data_ready = false;
+
+void UART_ISR() {
+    data_ready = true;
+}
+
+int main() {
+    while (!data_ready) {
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+volatile bool data_ready = false;
+
+void UART_ISR() {
+    data_ready = true;
+}
+
+int main() {
+    while (!data_ready) {
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Une variable modifiée par interruption peut être optimisée à tort par le compilateur.
+Dans ce cas, \texttt{volatile} indique qu'il faut relire la valeur en mémoire.
+
+% =====================================================
+\chapter{Initialisation globale risquée}
+
+\section{Mauvais code}
+\begin{lstlisting}
+/* A.cpp */
+HardwareTimer timerA;
+
+/* B.cpp */
+TimerManager manager(timerA);
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+constinit int g_hardware_config = 42;
+
+HardwareTimer& get_timer() {
+    static HardwareTimer timer;
+    return timer;
+}
+\end{lstlisting}
+
+\section{Explication}
+L'ordre d'initialisation des objets globaux répartis dans plusieurs unités de traduction n'est pas maîtrisé.
+Le pattern \emph{construct on first use} ou \texttt{constinit} réduit ce risque.
+
+% =====================================================
+\chapter{Alignement mémoire et padding}
+
+\section{Mauvais code}
+\begin{lstlisting}
+#include <cstdint>
+
+struct HardwareReg {
+    std::uint8_t flag;
+    std::uint32_t data;
+};
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+#include <cstdint>
+
+struct __attribute__((packed)) HardwareRegPacked {
+    std::uint8_t flag;
+    std::uint32_t data;
+};
+
+static_assert(sizeof(HardwareRegPacked) == 5);
+\end{lstlisting}
+
+\section{Explication}
+Le compilateur peut insérer des octets de bourrage dans une structure.
+Quand on mappe une structure sur du matériel ou un protocole, il faut maîtriser sa taille exacte.
+
+% =====================================================
+\chapter{Conclusion}
+
+Un code C++ de qualité professionnelle en approche DevSecOps repose sur :
+\begin{itemize}
+    \item une compilation stricte sans warning ;
+    \item une gestion rigoureuse des conversions, de la mémoire et des durées de vie ;
+    \item des API explicites avec \texttt{const}, \texttt{[[nodiscard]]} et \texttt{noexcept} ;
+    \item une attention particulière au polymorphisme, à la concurrence et à la robustesse ;
+    \item un style cohérent et une structuration claire des responsabilités ;
+    \item une adaptation aux contraintes embarquées quand le contexte l'exige.
+\end{itemize}
+
+Ces pratiques permettent de produire un code plus fiable, plus lisible, plus maintenable et plus sûr dans la durée.
+
+\end{document}

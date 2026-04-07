@@ -1,0 +1,727 @@
+\documentclass[a4paper,11pt]{report}
+
+% =====================================================
+% Packages
+% =====================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% =====================================================
+% Configuration listings Java & Bash
+% =====================================================
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
+\definecolor{darkred}{rgb}{0.6,0.0,0.0}
+
+\lstset{
+  language=Java,
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkred},
+  frame=single,
+  breaklines=true,
+  tabsize=2,
+  showstringspaces=false
+}
+
+% =====================================================
+% Titre
+% =====================================================
+\title{\textbf{Qualité de code en Java}\\
+Bonnes pratiques, robustesse, tests et DevSecOps}
+\author{Document pédagogique complet}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =====================================================
+\chapter{Introduction}
+
+\section{Objectif du document}
+
+Ce document a pour objectif de présenter les bonnes pratiques essentielles en langage Java à travers une approche comparative entre \textbf{mauvais} et \textbf{bon code}. Il vise à améliorer la qualité, la robustesse et la maintenabilité des applications en mettant en évidence les erreurs courantes et leurs corrections.
+
+\section{Criticité}
+
+Java offre un cadre plus sûr que des langages bas niveau, mais de mauvaises pratiques peuvent malgré tout conduire à :
+\begin{itemize}
+  \item des erreurs d'exécution comme les \texttt{NullPointerException}
+  \item des fuites de ressources
+  \item une dette technique importante
+\end{itemize}
+
+Adopter des règles strictes permet de produire un code lisible, fiable, testable et adapté à un contexte industriel.
+
+\section{Contenu du document}
+
+Ce document couvre les aspects fondamentaux de la qualité en Java :
+\begin{itemize}
+  \item Respect des conventions de nommage et de structure
+  \item Gestion correcte de \texttt{null}, des exceptions et des ressources
+  \item Bon usage des objets, collections et API modernes
+  \item Écriture de code lisible, documenté et maintenable
+\end{itemize}
+
+\section{Approche pédagogique}
+
+Chaque chapitre suit une structure simple et efficace :
+\begin{itemize}
+  \item un exemple de \textbf{mauvais code}
+  \item une version corrigée (\textbf{bon code})
+  \item une \textbf{explication} claire du problème et de la solution
+\end{itemize}
+
+Cette approche permet de comprendre rapidement les erreurs fréquentes et d'adopter les bons réflexes en situation réelle.
+
+% =====================================================
+\chapter{Conventions de nommage et casse}
+
+\section{Mauvais code}
+\begin{lstlisting}
+package Com.MyProject.Utils;
+
+class usermanager {
+    int User_Age;
+    void GetData() {}
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+package com.myproject.utils;
+
+class UserManager {
+    int userAge;
+
+    void getData() {
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Les conventions Java standard imposent :
+\begin{itemize}
+  \item les packages en minuscules ;
+  \item les classes en PascalCase ;
+  \item les méthodes et variables en camelCase.
+\end{itemize}
+
+Ces règles rendent le code immédiatement lisible et cohérent entre développeurs.
+Elles sont aussi vérifiées automatiquement par des outils comme Checkstyle.
+
+% =====================================================
+\chapter{Constantes et enums}
+
+\section{Mauvais code}
+\begin{lstlisting}
+final int max = 7000;
+
+enum state {
+    on, off
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+static final int MAX_RPM = 7000;
+
+enum State {
+    ON,
+    OFF
+}
+\end{lstlisting}
+
+\section{Explication}
+Les constantes doivent être facilement identifiables.
+Une convention claire améliore la lisibilité et réduit les ambiguïtés entre variables ordinaires et invariants.
+
+% =====================================================
+\chapter{Commentaires utiles}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int i = 0; // initialise i a zero
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+int index = 0;
+\end{lstlisting}
+
+\section{Explication}
+Un commentaire ne doit pas répéter ce que le code exprime déjà clairement.
+Il doit expliquer pourquoi le code existe, quelle contrainte il respecte, ou quelle hypothèse il documente.
+
+% =====================================================
+\chapter{Commentaires orientés intention}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// wait a bit
+Thread.sleep(200);
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+// Le capteur necessite 200 ms pour se stabiliser apres alimentation
+Thread.sleep(200);
+\end{lstlisting}
+
+\section{Explication}
+Un commentaire utile explique l'intention métier ou technique.
+Il doit apporter une information que le code seul ne permet pas de déduire facilement.
+
+% =====================================================
+\chapter{Javadoc et contrat d'API}
+
+\section{Mauvais code}
+\begin{lstlisting}
+/** get value */
+int getValue() {
+    return value;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+/**
+ * Retourne la tension mesuree par le capteur.
+ *
+ * @return tension en millivolts (>= 0)
+ */
+int getValue() {
+    return value;
+}
+\end{lstlisting}
+
+\section{Explication}
+La Javadoc définit le contrat d'une méthode : unités, hypothèses, valeurs de retour, exceptions éventuelles.
+Elle est essentielle pour les API publiques ou partagées.
+
+% =====================================================
+\chapter{Compilation stricte}
+
+\section{Mauvais code}
+\begin{lstlisting}
+javac Main.java
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+javac -Xlint:all -Werror Main.java
+\end{lstlisting}
+
+\section{Explication}
+Compiler avec des warnings activés permet de détecter plus tôt des problèmes de qualité.
+Traiter les warnings comme des erreurs évite qu'ils s'accumulent dans le projet.
+
+% =====================================================
+\chapter{NullPointerException}
+
+\section{Mauvais code}
+\begin{lstlisting}
+String role = getRole();
+if (role.equals("ADMIN")) {
+    grantAccess();
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+String role = getRole();
+if ("ADMIN".equals(role)) {
+    grantAccess();
+}
+\end{lstlisting}
+
+\section{Explication}
+Appeler une méthode sur une référence potentiellement nulle provoque une \texttt{NullPointerException}.
+Placer le littéral à gauche évite ce risque.
+
+% =====================================================
+\chapter{Gestion des retours null avec Optional}
+
+\section{Mauvais code}
+\begin{lstlisting}
+public User findUser(String id) {
+    if (db.notContains(id)) {
+        return null;
+    }
+    return db.get(id);
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import java.util.Optional;
+
+public Optional<User> findUser(String id) {
+    if (db.notContains(id)) {
+        return Optional.empty();
+    }
+    return Optional.of(db.get(id));
+}
+\end{lstlisting}
+
+\section{Explication}
+Retourner \texttt{null} oblige l'appelant à faire des vérifications manuelles, parfois oubliées.
+\texttt{Optional} rend explicite la possibilité d'absence de valeur.
+
+% =====================================================
+\chapter{Comparaison d'objets}
+
+\section{Mauvais code}
+\begin{lstlisting}
+String a = new String("x");
+String b = new String("x");
+
+if (a == b) {
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+if (a.equals(b)) {
+}
+\end{lstlisting}
+
+\section{Explication}
+L'opérateur \texttt{==} compare les références.
+Pour comparer le contenu de deux objets, il faut utiliser \texttt{equals()}.
+
+% =====================================================
+\chapter{equals() et hashCode()}
+
+\section{Mauvais code}
+\begin{lstlisting}
+class User {
+    String email;
+
+    public boolean equals(Object o) {
+        return (o instanceof User u)
+            && email.equals(u.email);
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+class User {
+    String email;
+
+    public boolean equals(Object o) {
+        return (o instanceof User u)
+            && email.equals(u.email);
+    }
+
+    public int hashCode() {
+        return email.hashCode();
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Si \texttt{equals()} est redéfini, \texttt{hashCode()} doit l'être aussi.
+Sinon les collections de hachage comme \texttt{HashMap} ou \texttt{HashSet} se comportent mal.
+
+% =====================================================
+\chapter{Immuabilité et records}
+
+\section{Mauvais code}
+\begin{lstlisting}
+public class Point {
+    private final int x;
+    private final int y;
+
+    public Point(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public int getX() { return x; }
+    public int getY() { return y; }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+public record Point(int x, int y) {}
+\end{lstlisting}
+
+\section{Explication}
+Les \texttt{record} réduisent fortement le code répétitif.
+Ils fournissent automatiquement un constructeur, des accesseurs, \texttt{equals()}, \texttt{hashCode()} et \texttt{toString()}.
+
+% =====================================================
+\chapter{Ressources non fermées}
+
+\section{Mauvais code}
+\begin{lstlisting}
+FileInputStream in = new FileInputStream("data.txt");
+byte[] data = in.readAllBytes();
+in.close();
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+try (FileInputStream in = new FileInputStream("data.txt")) {
+    byte[] data = in.readAllBytes();
+}
+\end{lstlisting}
+
+\section{Explication}
+Si une exception survient, une ressource ouverte manuellement peut ne jamais être libérée.
+Le \texttt{try-with-resources} garantit la fermeture correcte.
+
+% =====================================================
+\chapter{Sortie standard et journalisation}
+
+\section{Mauvais code}
+\begin{lstlisting}
+try {
+    processData();
+    System.out.println("Traitement termine");
+} catch (Exception e) {
+    e.printStackTrace();
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+private static final Logger LOGGER =
+    LoggerFactory.getLogger(MyClass.class);
+
+try {
+    processData();
+    LOGGER.info("Traitement termine avec succes");
+} catch (Exception e) {
+    LOGGER.error("Erreur lors du traitement des donnees", e);
+}
+\end{lstlisting}
+
+\section{Explication}
+\texttt{System.out.println()} et \texttt{printStackTrace()} sont peu adaptés à un code industriel.
+Une bibliothèque de logging permet un meilleur contrôle, un meilleur formatage et une meilleure intégration aux outils de supervision.
+
+% =====================================================
+\chapter{Exceptions avalées}
+
+\section{Mauvais code}
+\begin{lstlisting}
+try {
+    save();
+} catch (Exception e) {
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+try {
+    save();
+} catch (IOException e) {
+    LOGGER.error("Erreur sauvegarde", e);
+    throw new CustomException("Impossible de sauvegarder", e);
+}
+\end{lstlisting}
+
+\section{Explication}
+Un \texttt{catch} vide masque complètement l'erreur.
+Il faut au minimum journaliser le problème, puis le propager ou le transformer en exception métier.
+
+% =====================================================
+\chapter{Concurrence : visibilité mémoire}
+
+\section{Mauvais code}
+\begin{lstlisting}
+boolean stop = false;
+
+void loop() {
+    while (!stop) {}
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+volatile boolean stop = false;
+
+void loop() {
+    while (!stop) {}
+}
+\end{lstlisting}
+
+\section{Explication}
+Sans \texttt{volatile} ou synchronisation, un thread peut ne jamais observer la mise à jour faite par un autre thread.
+Cela peut provoquer des boucles infinies.
+
+% =====================================================
+\chapter{Concurrence : opération non atomique}
+
+\section{Mauvais code}
+\begin{lstlisting}
+int count = 0;
+
+void inc() {
+    count++;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import java.util.concurrent.atomic.AtomicInteger;
+
+AtomicInteger count = new AtomicInteger(0);
+
+void inc() {
+    count.incrementAndGet();
+}
+\end{lstlisting}
+
+\section{Explication}
+L'opération \texttt{++} n'est pas atomique.
+En environnement multithread, il faut utiliser des primitives adaptées comme \texttt{AtomicInteger}.
+
+% =====================================================
+\chapter{Modification de collection pendant itération}
+
+\section{Mauvais code}
+\begin{lstlisting}
+for (String s : list) {
+    if (s.isBlank()) {
+        list.remove(s);
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+list.removeIf(String::isBlank);
+\end{lstlisting}
+
+\section{Explication}
+Modifier une collection pendant une boucle \texttt{for-each} provoque souvent une \texttt{ConcurrentModificationException}.
+Il faut utiliser une méthode adaptée.
+
+% =====================================================
+\chapter{API Stream}
+
+\section{Mauvais code}
+\begin{lstlisting}
+List<String> activeNames = new ArrayList<>();
+for (User user : users) {
+    if (user.isActive()) {
+        activeNames.add(user.getName().toUpperCase());
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+List<String> activeNames = users.stream()
+    .filter(User::isActive)
+    .map(user -> user.getName().toUpperCase())
+    .toList();
+\end{lstlisting}
+
+\section{Explication}
+L'API Stream permet d'exprimer plus directement l'intention : filtrer, transformer, collecter.
+Elle réduit souvent le bruit technique des boucles manuelles.
+
+% =====================================================
+\chapter{Performance : String en boucle}
+
+\section{Mauvais code}
+\begin{lstlisting}
+String s = "";
+for (int i = 0; i < 10000; i++) {
+    s += i;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 10000; i++) {
+    sb.append(i);
+}
+String s = sb.toString();
+\end{lstlisting}
+
+\section{Explication}
+Les objets \texttt{String} sont immuables.
+Les concaténations répétées créent beaucoup d'objets temporaires ; \texttt{StringBuilder} est plus efficace.
+
+% =====================================================
+\chapter{Tests unitaires}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// Aucun test associe
+int add(int a, int b) {
+    return a + b;
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class CalculatorTest {
+    @Test
+    void shouldAddTwoNumbers() {
+        assertEquals(4, add(2, 2));
+    }
+}
+\end{lstlisting}
+
+\section{Explication}
+Les tests unitaires permettent de valider le comportement réel du code et de détecter les régressions.
+Ils sont indispensables dans une chaîne de qualité moderne.
+
+% =====================================================
+\chapter{Couverture de code}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// Code de production jamais execute pendant les tests
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+mvn jacoco:report
+\end{lstlisting}
+
+\section{Explication}
+La couverture mesure la part du code réellement exécutée pendant les tests.
+Elle permet d'identifier des zones non testées.
+
+% =====================================================
+\chapter{Complexité excessive}
+
+\section{Mauvais code}
+\begin{lstlisting}
+if (a) {
+    if (b) {
+        if (c) {
+            if (d) {
+                work();
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+if (a && b && c && d) {
+    work();
+}
+\end{lstlisting}
+
+\section{Explication}
+Une trop forte imbrication rend le code difficile à lire, à tester et à maintenir.
+Réduire la complexité améliore la qualité globale du logiciel.
+
+% =====================================================
+\chapter{Analyse de style avec Checkstyle}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// Aucun controle automatique du style
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+mvn checkstyle:check
+\end{lstlisting}
+
+\section{Explication}
+Checkstyle vérifie automatiquement le respect des conventions de style et de formatage.
+Cela homogénéise le code à l'échelle du projet.
+
+% =====================================================
+\chapter{Analyse de bugs avec SpotBugs et PMD}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// Aucun scan de bugs ou mauvaises pratiques
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+mvn spotbugs:check
+mvn pmd:check
+\end{lstlisting}
+
+\section{Explication}
+Ces outils détectent des défauts fréquents, des mauvaises pratiques et certains problèmes de robustesse ou de sécurité.
+Ils complètent utilement les tests.
+
+% =====================================================
+\chapter{Sécurité des dépendances}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// Dependances tierces jamais verifiees
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+mvn dependency-check:check
+\end{lstlisting}
+
+\section{Explication}
+Une part importante des vulnérabilités vient des bibliothèques tierces.
+Il faut analyser régulièrement les dépendances utilisées.
+
+% =====================================================
+\chapter{Inspection continue avec SonarQube}
+
+\section{Mauvais code}
+\begin{lstlisting}
+// Aucun quality gate centralise
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+mvn clean verify sonar:sonar \
+  -Dsonar.projectKey=mon-projet-java \
+  -Dsonar.host.url=http://localhost:9000 \
+  -Dsonar.token=mon_token_secret
+\end{lstlisting}
+
+\section{Explication}
+SonarQube centralise la dette technique, les bugs, les vulnérabilités et la couverture.
+Cela permet de mettre en place une vraie quality gate dans l'intégration continue.
+
+% =====================================================
+\chapter{Conclusion}
+
+Un code Java de qualité professionnelle en approche DevSecOps repose sur :
+\begin{itemize}
+    \item des conventions de nommage et de style claires ;
+    \item des API bien documentées ;
+    \item une gestion maîtrisée de \texttt{null}, des exceptions et des ressources ;
+    \item une attention particulière à la concurrence et à la lisibilité ;
+    \item des tests unitaires et une couverture mesurée ;
+    \item des analyses automatiques de style, de bugs, de sécurité et de dette technique.
+\end{itemize}
+
+Ces pratiques permettent de produire un code plus robuste, plus maintenable, plus sûr et plus industrialisable.
+
+\end{document}

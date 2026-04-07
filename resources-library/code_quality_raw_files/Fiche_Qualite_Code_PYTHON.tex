@@ -1,0 +1,623 @@
+\documentclass[a4paper,11pt]{report}
+
+% =====================================================
+% Packages
+% =====================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% =====================================================
+% Configuration listings Python & Bash
+% =====================================================
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
+\definecolor{darkred}{rgb}{0.6,0.0,0.0}
+
+\lstdefinelanguage{properties}{
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morekeywords={
+    sonar.projectKey, sonar.projectName, sonar.projectVersion,
+    sonar.sources, sonar.tests, sonar.python.version,
+    sonar.python.pylint.reportPaths, sonar.python.coverage.reportPaths,
+    sonar.python.xunit.reportPath, sonar.python.bandit.reportPaths
+  }
+}
+
+\lstset{
+  language=Python,
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkred},
+  frame=single,
+  breaklines=true,
+  tabsize=4,
+  showstringspaces=false
+}
+
+% =====================================================
+% Titre
+% =====================================================
+\title{\textbf{Qualité de code en Python}\\
+Bonnes pratiques, tests, sécurité et DevSecOps}
+\author{Document pédagogique complet}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =====================================================
+\chapter{Introduction}
+
+\section{Objectif du document}
+
+Ce document a pour objectif de présenter les bonnes pratiques essentielles en langage Python à travers une approche comparative entre \textbf{mauvais} et \textbf{bon code}. Il vise à améliorer la qualité, la robustesse et la maintenabilité des programmes en mettant en évidence les erreurs courantes et leurs corrections.
+
+\section{Criticité}
+
+Python permet de développer rapidement, mais cette simplicité apparente peut masquer des défauts importants. Une mauvaise pratique peut rapidement conduire à :
+\begin{itemize}
+  \item du code difficile à relire et à maintenir
+  \item des erreurs d'exécution liées à des contrats flous
+  \item des problèmes de sécurité
+  \item une complexité croissante difficile à maîtriser
+\end{itemize}
+
+Adopter des règles strictes permet de structurer le code, d'améliorer sa fiabilité et de faciliter son industrialisation.
+
+\section{Contenu du document}
+
+Ce document couvre les aspects fondamentaux de la qualité en Python :
+\begin{itemize}
+  \item Respect des conventions de style, de nommage et de documentation
+  \item Réduction de la complexité et suppression des duplications
+  \item Gestion explicite des erreurs, des valeurs absentes et des contrats
+  \item Écriture de code lisible, testable et maintenable
+  \item Mise en place des tests unitaires et mesure de couverture
+\end{itemize}
+
+\section{Approche pédagogique}
+
+Chaque chapitre suit une structure simple et efficace :
+\begin{itemize}
+  \item un exemple de \textbf{mauvais code}
+  \item une version corrigée (\textbf{bon code})
+  \item une \textbf{explication} claire du problème et de la solution
+\end{itemize}
+
+Cette approche permet de comprendre rapidement les erreurs fréquentes et d'adopter les bons réflexes en situation réelle.
+
+% =====================================================
+\chapter{Commentaires trompeurs et code peu expressif}
+
+\section{Mauvais code}
+\begin{lstlisting}
+error_value = False  # Reset error value to true
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+error_value = False
+\end{lstlisting}
+
+\section{Explication}
+Un commentaire faux ou inutile rend le code plus dangereux qu'utile. Quand le nommage est clair, le commentaire devient souvent inutile. Un commentaire doit expliquer l'intention ou la contrainte, pas répéter le code.
+
+% =====================================================
+\chapter{Nommage métier et lisibilité}
+
+\section{Mauvais code}
+\begin{lstlisting}
+intv = 200
+time.sleep(intv / 1000)
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+stabilisation_delay_ms = 200
+time.sleep(stabilisation_delay_ms / 1000)
+\end{lstlisting}
+
+\section{Explication}
+Un nom trop court ou ambigu ralentit la lecture.
+Un nom métier explicite permet de comprendre le rôle de la variable sans effort.
+
+% =====================================================
+\chapter{Nombres magiques et duplication}
+
+\section{Mauvais code}
+\begin{lstlisting}
+if month == 3:
+    day_of_month += 59
+elif month == 4:
+    day_of_month += 90
+elif month == 5:
+    day_of_month += 31 + 28 + 31 + 30
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+MONTH_LENGTHS = [31, 28, 31, 30, 31, 30,
+                 31, 31, 30, 31, 30, 31]
+
+def get_day_of_year(month: int, day_of_month: int) -> int:
+    return sum(MONTH_LENGTHS[:month - 1]) + day_of_month
+\end{lstlisting}
+
+\section{Explication}
+Les nombres magiques et les branches répétitives rendent le code fragile et difficile à relire.
+Il vaut mieux centraliser les données dans une structure claire et éviter la duplication.
+
+% =====================================================
+\chapter{Dictionnaires fragiles vs dataclasses}
+
+\section{Mauvais code}
+\begin{lstlisting}
+user = {"nom": "Alice", "role": "admin"}
+print(user["nmo"])
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class User:
+    nom: str
+    role: str
+
+user = User(nom="Alice", role="admin")
+\end{lstlisting}
+
+\section{Explication}
+Un dictionnaire libre ne fournit aucun contrat fort sur les champs attendus.
+Une \texttt{dataclass} apporte une structure explicite, une meilleure lisibilité et une meilleure compatibilité avec les outils d'analyse.
+
+% =====================================================
+\chapter{Docstrings et style conforme}
+
+\section{Mauvais code}
+\begin{lstlisting}
+import sys
+
+def Calculer_Somme(A, B):
+  result = A + B
+  return result
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+"""Fonctions de calcul mathematique basiques."""
+
+def calculer_somme(valeur_a: float, valeur_b: float) -> float:
+    """
+    Calcule et retourne la somme de deux nombres.
+
+    Args:
+        valeur_a: Premier operande.
+        valeur_b: Second operande.
+
+    Returns:
+        Somme des deux valeurs.
+    """
+    resultat = valeur_a + valeur_b
+    return resultat
+\end{lstlisting}
+
+\section{Explication}
+Un code Python professionnel doit respecter les conventions de nommage, d'indentation et de documentation.
+Les docstrings améliorent la compréhension, la génération de documentation et les analyses automatiques.
+
+% =====================================================
+\chapter{Gestion incorrecte de None}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def find_user(user_id):
+    if user_id not in db:
+        return None
+    return db[user_id]
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+from typing import Optional
+
+def find_user(user_id: str) -> Optional["User"]:
+    if user_id not in db:
+        return None
+    return db[user_id]
+\end{lstlisting}
+
+\section{Explication}
+Retourner \texttt{None} peut être acceptable, mais il faut le rendre explicite dans le contrat de la fonction.
+Le typage permet d'indiquer clairement à l'appelant qu'une absence de valeur est possible.
+
+% =====================================================
+\chapter{Traitement explicite de None}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def get_user_name(user_id):
+    return find_user(user_id).name
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+def get_user_name(user_id: str) -> str:
+    user = find_user(user_id)
+    if user is None:
+        raise ValueError("Utilisateur introuvable")
+    return user.name
+\end{lstlisting}
+
+\section{Explication}
+Enchaîner directement sur un résultat potentiellement nul produit des erreurs d'exécution.
+Il faut traiter explicitement le cas d'absence.
+
+% =====================================================
+\chapter{Exceptions avalées}
+
+\section{Mauvais code}
+\begin{lstlisting}
+try:
+    save()
+except Exception:
+    pass
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    save()
+except OSError as exc:
+    logger.exception("Erreur lors de la sauvegarde")
+    raise RuntimeError("Impossible de sauvegarder") from exc
+\end{lstlisting}
+
+\section{Explication}
+Un \texttt{except} vide masque complètement l'erreur et rend le diagnostic difficile.
+Il faut au minimum journaliser, puis propager ou transformer l'exception si nécessaire.
+
+% =====================================================
+\chapter{Valeurs de retour implicites}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def compute(value):
+    if value < 0:
+        return
+    return value * 2
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+from typing import Optional
+
+def compute(value: int) -> Optional[int]:
+    if value < 0:
+        return None
+    return value * 2
+\end{lstlisting}
+
+\section{Explication}
+Une fonction qui retourne parfois une valeur et parfois rien devient ambiguë.
+Il faut rendre ce contrat explicite avec un type adapté.
+
+% =====================================================
+\chapter{Concaténation de chaînes en boucle}
+
+\section{Mauvais code}
+\begin{lstlisting}
+resultat = ""
+for i in range(10000):
+    resultat += str(i)
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+parties = []
+for i in range(10000):
+    parties.append(str(i))
+
+resultat = "".join(parties)
+\end{lstlisting}
+
+\section{Explication}
+Concaténer une chaîne dans une boucle crée de nombreux objets intermédiaires.
+La méthode \texttt{join} est plus efficace et plus idiomatique.
+
+% =====================================================
+\chapter{Complexité excessive}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def evaluer_statut(age, abonne, premium):
+    if age > 18:
+        if abonne:
+            if premium:
+                return "VIP"
+            else:
+                return "Membre"
+        else:
+            return "Visiteur"
+    else:
+        return "Mineur"
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+def evaluer_statut(age, abonne, premium):
+    if age <= 18:
+        return "Mineur"
+    if not abonne:
+        return "Visiteur"
+    if premium:
+        return "VIP"
+    return "Membre"
+\end{lstlisting}
+
+\section{Explication}
+Des conditions imbriquées en cascade augmentent la complexité cognitive.
+Les retours anticipés rendent souvent le code plus lisible et plus simple à tester.
+
+% =====================================================
+\chapter{Gestion des sous-processus}
+
+\section{Mauvais code}
+\begin{lstlisting}
+import subprocess
+
+cmd = input("Commande: ")
+subprocess.call(cmd, shell=True)
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import subprocess
+
+allowed = ["status", "version"]
+cmd = input("Commande: ")
+
+if cmd not in allowed:
+    raise ValueError("Commande interdite")
+
+subprocess.run(["tool", cmd], check=True)
+\end{lstlisting}
+
+\section{Explication}
+L'usage de \texttt{shell=True} avec une entrée utilisateur ouvre la porte à des injections de commande.
+Il faut restreindre les commandes autorisées et passer les arguments sous forme de liste.
+
+% =====================================================
+\chapter{Tests unitaires absents}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def add(a, b):
+    return a + b
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+def add(a: int, b: int) -> int:
+    return a + b
+
+def test_add() -> None:
+    assert add(2, 2) == 4
+\end{lstlisting}
+
+\section{Explication}
+Sans test, une régression peut passer inaperçue.
+Même un test très simple augmente fortement la confiance dans le comportement attendu.
+
+% =====================================================
+\chapter{Analyse statique avec Pylint}
+
+\section{Mauvais code}
+\begin{lstlisting}
+import sys
+
+def Calculer_Somme(A, B):
+  result = A + B
+  return result
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+pip install pylint
+pylint mon_script.py --output-format=parseable > pylint-report.txt
+\end{lstlisting}
+
+\section{Explication}
+Pylint détecte les problèmes de style, de nommage, de structure et de robustesse.
+Il permet d'industrialiser la qualité de code dès les premières phases du développement.
+
+% =====================================================
+\chapter{Vérification des types avec MyPy}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def increment(x):
+    return x + 1
+
+increment("abc")
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+def increment(x: int) -> int:
+    return x + 1
+\end{lstlisting}
+
+\section{Explication}
+Le typage statique optionnel aide à détecter des incohérences avant l'exécution.
+MyPy complète utilement les tests et l'analyse de style.
+
+\begin{lstlisting}[language=bash]
+pip install mypy
+mypy mon_script.py --strict
+\end{lstlisting}
+
+% =====================================================
+\chapter{Analyse de sécurité avec Bandit}
+
+\section{Mauvais code}
+\begin{lstlisting}
+import pickle
+
+data = pickle.loads(user_input)
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+import json
+
+data = json.loads(user_input)
+\end{lstlisting}
+
+\section{Explication}
+Certaines bibliothèques ou pratiques introduisent des risques de sécurité importants.
+Bandit aide à repérer automatiquement ce type de vulnérabilités dans le code Python.
+
+\begin{lstlisting}[language=bash]
+pip install bandit
+bandit -r . -f xml -o bandit-report.xml
+\end{lstlisting}
+
+% =====================================================
+\chapter{Sécurité des dépendances}
+
+\section{Mauvais code}
+\begin{lstlisting}
+# requirements.txt non verifie
+flask==0.10
+requests==2.4.0
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+pip install safety
+safety check -r requirements.txt
+\end{lstlisting}
+
+\section{Explication}
+Une part importante des vulnérabilités provient des dépendances tierces.
+Il faut scanner régulièrement les bibliothèques utilisées.
+
+% =====================================================
+\chapter{Complexité avec Radon}
+
+\section{Mauvais code}
+\begin{lstlisting}
+def process(a, b, c, d, e):
+    if a:
+        if b:
+            if c:
+                if d:
+                    if e:
+                        return 1
+    return 0
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}
+def process(a, b, c, d, e):
+    if not a:
+        return 0
+    if not b:
+        return 0
+    if not c:
+        return 0
+    if not d:
+        return 0
+    if not e:
+        return 0
+    return 1
+\end{lstlisting}
+
+\section{Explication}
+Une complexité trop élevée rend le code difficile à maintenir et à tester.
+Radon permet de mesurer la complexité cyclomatique.
+
+\begin{lstlisting}[language=bash]
+pip install radon
+radon cc mon_script.py -a
+\end{lstlisting}
+
+% =====================================================
+\chapter{Couverture de tests}
+
+\section{Mauvais code}
+\begin{lstlisting}
+# Code de production jamais execute en test
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=bash]
+pip install pytest coverage
+coverage run -m pytest --junitxml=pytest-report.xml test_mon_script.py
+coverage xml
+\end{lstlisting}
+
+\section{Explication}
+La couverture mesure la part du code réellement exécutée par les tests.
+Elle permet d'identifier des zones non vérifiées ou du code mort.
+
+% =====================================================
+\chapter{Inspection continue avec SonarQube}
+
+\section{Mauvais code}
+\begin{lstlisting}
+# Aucun quality gate centralise
+\end{lstlisting}
+
+\section{Bon code}
+\begin{lstlisting}[language=properties]
+sonar.projectKey=mon_projet_python
+sonar.projectName=Projet Python DevSecOps
+sonar.sources=src
+sonar.tests=tests
+sonar.python.version=3.11
+
+sonar.python.pylint.reportPaths=pylint-report.txt
+sonar.python.bandit.reportPaths=bandit-report.xml
+sonar.python.coverage.reportPaths=coverage.xml
+sonar.python.xunit.reportPath=pytest-report.xml
+\end{lstlisting}
+
+\section{Explication}
+SonarQube centralise les rapports de qualité, de sécurité, de couverture et de dette technique.
+Cela permet de mettre en place une vraie quality gate dans la CI.
+
+% =====================================================
+\chapter{Conclusion}
+
+Un code Python de qualité professionnelle en approche DevSecOps repose sur :
+\begin{itemize}
+    \item un code lisible, bien nommé et documenté ;
+    \item une gestion explicite des erreurs, des valeurs absentes et des contrats ;
+    \item des fonctions simples, peu complexes et peu dupliquées ;
+    \item des tests unitaires et une couverture mesurée ;
+    \item une analyse statique de style, de type et de sécurité ;
+    \item une intégration continue avec quality gate.
+\end{itemize}
+
+Ces pratiques permettent de produire un code plus robuste, plus maintenable, plus sûr et mieux industrialisé.
+
+\end{document}
